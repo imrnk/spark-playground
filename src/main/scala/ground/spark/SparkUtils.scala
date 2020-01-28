@@ -10,6 +10,7 @@ object SparkUtils {
   def sparkSession(): SparkSession = {
     val session = SparkSession.builder()
       .config("spark.master", "local")
+      .master("local")
       .enableHiveSupport()
       .getOrCreate()
     // Import the implicits, unlike in core Spark the implicits are defined

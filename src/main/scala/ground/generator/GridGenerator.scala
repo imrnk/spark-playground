@@ -3,9 +3,9 @@ package ground.generator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SparkSession}
 
-class GridGenerator(val scenario: Int, val tenor: Int, seed : Int) {
+class GridGenerator(val scenario: Int, val tenor: Int, seed : Int) extends Serializable {
 
-  def generate(session : SparkSession, trade : String): RDD[Row] = {
+  def generate(implicit session : SparkSession, trade : String): RDD[Row] = {
     /**
     Seq(Row(Array(1.1,2.3,3.4)),
     Row(Array(1.7,2.6,3.4)),
@@ -18,8 +18,9 @@ class GridGenerator(val scenario: Int, val tenor: Int, seed : Int) {
     val grids = Range(0, scenario).map { is =>
       Row(trade, Range(0, tenor).map(it => random.nextInt(300) * random2.nextFloat).toArray)
     }
-
     val gridRdd = session.sparkContext.parallelize(grids)
+    //val gridSchema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
+   // session.createDataFrame(gridRdd, gridSchema)
     gridRdd
   }
 

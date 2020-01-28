@@ -5,7 +5,7 @@ import ground.spark.SparkUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
-class PopulateGrid (val gridCSV : String) extends Logging{
+class PopulateGrid (val gridCSV : String) extends Logging with Serializable {
   import SparkUtils._
 
   implicit val session = SparkUtils.sparkSession()
@@ -20,23 +20,26 @@ class PopulateGrid (val gridCSV : String) extends Logging{
   }
 
 
-  def whatever(trades: DataFrame, scenario : Int, tenor : Int) : DataFrame = {
+  def gridForAllTrades(trades: DataFrame, scenario : Int, tenor : Int) : DataFrame = {
     //val gridRDD =
     //trades.rdd.fold()
-   // trades.rdd.flatMap(trade => GridGenerator(scenario, tenor, 100).generate(session, trade.getAs[String](0)))
-
+    val alltradeGrids = trades.rdd.map(trade => gridForEachTrade(trade.getAs[String](0)))
+    val flattenedGrids = alltradeGrids.fold(session.emptyDataFrame.rdd)((zero, rdd) => zero.union(rdd))
+    val gridSchema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
+    session.createDataFrame(flattenedGrids, gridSchema)
   }
 
   //for each trade generate grid
   def gridForEachTrade(trade : String)  = {
+    val sc  = session.sparkContext
     val gridRDD = GridGenerator(100, 55, 100).generate(session, trade)
-   // gridRDD.first()
-    val schema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
-    session.createDataFrame(gridRDD, schema)
+    val gridSchema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
+    session.createDataFrame(gridRDD, gridSchema)
+    gridRDD
   }
 
   //write the grid against each trade into output csv
-  def writeTradeGridCSV(trade: String, grid : Array[Array[Float]]) : Unit = ???
+ // def writeTradeGridCSV(trade: String, grid : Array[Array[Float]]) : Unit = ???
 
 
   /*def writeAllGrids = {
@@ -62,10 +65,10 @@ object poprun extends Logging {
     val df = pg.readMappingCSV
 
     val trades = pg.trades(df)
-    val grids = pg.gridForEachTrade("")
-
+ //   val grids = pg.gridForEachTrade("")
+      val grids = pg.gridForAllTrades(trades, 10, 20)
+    grids.show(10)
     //grids.printSchema()
-    log.info("", grids.show(2))
     //println(grids)
     //pg.writeAllGrids
     //trades.show(10)
