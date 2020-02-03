@@ -21,21 +21,16 @@ class PopulateGrid (val gridCSV : String) extends Logging with Serializable {
 
 
   def gridForAllTrades(trades: DataFrame, scenario : Int, tenor : Int) : DataFrame = {
-    //val gridRDD =
-    //trades.rdd.fold()
     val alltradeGrids = trades.rdd.map(trade => gridForEachTrade(trade.getAs[String](0)))
-    val flattenedGrids = alltradeGrids.fold(session.emptyDataFrame.rdd)((zero, rdd) => zero.union(rdd))
+    val flattenedGrids = alltradeGrids.fold(Seq[Row]())((zero, rdd) => zero.union(rdd))
+    //flattenedGrids.toDF("trades", "")
     val gridSchema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
-    session.createDataFrame(flattenedGrids, gridSchema)
+    session.createDataFrame(session.sparkContext.parallelize(flattenedGrids), gridSchema)
   }
 
   //for each trade generate grid
   def gridForEachTrade(trade : String)  = {
-    val sc  = session.sparkContext
-    val gridRDD = GridGenerator(100, 55, 100).generate(session, trade)
-    val gridSchema = new StructType().add(StructField("trades", StringType)).add(StructField("exposure_grid", ArrayType(FloatType), true))
-    session.createDataFrame(gridRDD, gridSchema)
-    gridRDD
+     GridGenerator(100, 55, 100).generate(trade)
   }
 
   //write the grid against each trade into output csv
@@ -54,7 +49,6 @@ class PopulateGrid (val gridCSV : String) extends Logging with Serializable {
 
 
 object PopulateGrid {
-
   def apply(path : String): PopulateGrid = new PopulateGrid(path)
 }
 
