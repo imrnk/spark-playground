@@ -9,9 +9,11 @@ scalaVersion in ThisBuild := "2.11.6"
 
 crossScalaVersions := Seq("2.11.6")
 
+//scalacOptions += "-Ypartial-unification"
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 
 val sparkVersion = "2.1.1"
+val catsVersion = "1.4.0"
 
 resolvers ++= Seq(
   "apache-snapshots" at "http://repository.apache.org/snapshots/"
@@ -21,8 +23,11 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion ,
   "org.apache.spark" %% "spark-sql" % sparkVersion ,
   "org.apache.spark" %% "spark-mllib" % sparkVersion ,
-  "org.apache.spark" %% "spark-hive" % sparkVersion 
+  "org.apache.spark" %% "spark-hive" % sparkVersion ,
+  "org.typelevel" %% "cats-core" % catsVersion
 )
+
+
 
 parallelExecution in Test := false
 
